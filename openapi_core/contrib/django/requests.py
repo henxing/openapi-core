@@ -73,6 +73,10 @@ class DjangoOpenAPIRequestFactory:
         return request.method.lower()
 
     def _get_body(self, request):
+        # Handle django.http.HttpRequest differently than
+        # rest_framework.response.Request
+        if hasattr(request, "data"):
+            return request.data
         return request.body
 
     def _get_mimetype(self, request):
