@@ -78,8 +78,7 @@ class DjangoOpenAPIRequest:
     @property
     def body(self) -> str:
         if hasattr(request, "data"):
-            assert isinstance(self.request.data, bytes)
-            return self.request.data.decode("utf-8")
+            return self.request.data
         assert isinstance(self.request.body, bytes)
         return self.request.body.decode("utf-8")
 
