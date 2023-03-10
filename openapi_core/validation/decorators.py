@@ -1,60 +1,58 @@
-"""OpenAPI core validation decorators module"""
 from functools import wraps
+from inspect import signature
+from typing import Any
+from typing import Callable
+from typing import Optional
+from typing import Type
 
-from openapi_core.validation.processors import OpenAPIProcessor
+from openapi_core.exceptions import OpenAPIError
+from openapi_core.validation.schemas.exceptions import ValidateError
+
+OpenAPIErrorType = Type[OpenAPIError]
 
 
-class OpenAPIDecorator(OpenAPIProcessor):
+class ValidationErrorWrapper:
     def __init__(
         self,
-        request_validator,
-        response_validator,
-        request_factory,
-        response_factory,
-        request_provider,
-        openapi_errors_handler,
+        err_cls: OpenAPIErrorType,
+        err_validate_cls: Optional[OpenAPIErrorType] = None,
+        err_cls_init: Optional[str] = None,
+        **err_cls_kw: Any
     ):
-        super().__init__(request_validator, response_validator)
-        self.request_factory = request_factory
-        self.response_factory = response_factory
-        self.request_provider = request_provider
-        self.openapi_errors_handler = openapi_errors_handler
+        self.err_cls = err_cls
+        self.err_validate_cls = err_validate_cls or err_cls
+        self.err_cls_init = err_cls_init
+        self.err_cls_kw = err_cls_kw
 
-    def __call__(self, view):
-        @wraps(view)
-        def decorated(*args, **kwargs):
-            request = self._get_request(*args, **kwargs)
-            openapi_request = self._get_openapi_request(request)
-            request_result = self.process_request(openapi_request)
-            if request_result.errors:
-                return self._handle_request_errors(request_result)
-            response = self._handle_request_view(
-                request_result, view, *args, **kwargs
-            )
-            openapi_response = self._get_openapi_response(response)
-            response_result = self.process_response(
-                openapi_request, openapi_response
-            )
-            if response_result.errors:
-                return self._handle_response_errors(response_result)
-            return response
+    def __call__(self, f: Callable[..., Any]) -> Callable[..., Any]:
+        @wraps(f)
+        def wrapper(*args: Any, **kwds: Any) -> Any:
+            try:
+                return f(*args, **kwds)
+            except ValidateError as exc:
+                self._raise_error(exc, self.err_validate_cls, f, *args, **kwds)
+            except OpenAPIError as exc:
+                self._raise_error(exc, self.err_cls, f, *args, **kwds)
 
-        return decorated
+        return wrapper
 
-    def _get_request(self, *args, **kwargs):
-        return self.request_provider.provide(*args, **kwargs)
-
-    def _handle_request_view(self, request_result, view, *args, **kwargs):
-        return view(*args, **kwargs)
-
-    def _handle_request_errors(self, request_result):
-        return self.openapi_errors_handler.handle(request_result.errors)
-
-    def _handle_response_errors(self, response_result):
-        return self.openapi_errors_handler.handle(response_result.errors)
-
-    def _get_openapi_request(self, request):
-        return self.request_factory.create(request)
-
-    def _get_openapi_response(self, response):
-        return self.response_factory.create(response)
+    def _raise_error(
+        self,
+        exc: OpenAPIError,
+        cls: OpenAPIErrorType,
+        f: Callable[..., Any],
+        *args: Any,
+        **kwds: Any
+    ) -> None:
+        if isinstance(exc, self.err_cls):
+            raise
+        sig = signature(f)
+        ba = sig.bind(*args, **kwds)
+        kw = {
+            name: ba.arguments[func_kw]
+            for name, func_kw in self.err_cls_kw.items()
+        }
+        init = cls
+        if self.err_cls_init is not None:
+            init = getattr(cls, self.err_cls_init)
+        raise init(**kw) from exc

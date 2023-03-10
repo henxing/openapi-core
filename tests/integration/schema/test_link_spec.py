@@ -1,10 +1,16 @@
-from openapi_core.shortcuts import create_spec
+import pytest
 
 
 class TestLinkSpec:
-    def test_no_param(self, factory):
-        spec_dict = factory.spec_from_file("data/v3.0/links.yaml")
-        spec = create_spec(spec_dict)
+    @pytest.mark.parametrize(
+        "spec_file",
+        [
+            "data/v3.0/links.yaml",
+            "data/v3.1/links.yaml",
+        ],
+    )
+    def test_no_param(self, spec_file, factory):
+        spec = factory.spec_from_file(spec_file)
         resp = spec / "paths#/status#get#responses#default"
 
         links = resp / "links"
@@ -16,9 +22,15 @@ class TestLinkSpec:
         assert "requestBody" not in link
         assert "parameters" not in link
 
-    def test_param(self, factory):
-        spec_dict = factory.spec_from_file("data/v3.0/links.yaml")
-        spec = create_spec(spec_dict)
+    @pytest.mark.parametrize(
+        "spec_file",
+        [
+            "data/v3.0/links.yaml",
+            "data/v3.1/links.yaml",
+        ],
+    )
+    def test_param(self, spec_file, factory):
+        spec = factory.spec_from_file(spec_file)
         resp = spec / "paths#/status/{resourceId}#get#responses#default"
 
         links = resp / "links"

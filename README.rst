@@ -4,10 +4,10 @@ openapi-core
 
 .. image:: https://img.shields.io/pypi/v/openapi-core.svg
      :target: https://pypi.python.org/pypi/openapi-core
-.. image:: https://travis-ci.org/p1c2u/openapi-core.svg?branch=master
-     :target: https://travis-ci.org/p1c2u/openapi-core
-.. image:: https://img.shields.io/codecov/c/github/p1c2u/openapi-core/master.svg?style=flat
-     :target: https://codecov.io/github/p1c2u/openapi-core?branch=master
+.. image:: https://travis-ci.org/python-openapi/openapi-core.svg?branch=master
+     :target: https://travis-ci.org/python-openapi/openapi-core
+.. image:: https://img.shields.io/codecov/c/github/python-openapi/openapi-core/master.svg?style=flat
+     :target: https://codecov.io/github/python-openapi/openapi-core?branch=master
 .. image:: https://img.shields.io/pypi/pyversions/openapi-core.svg
      :target: https://pypi.python.org/pypi/openapi-core
 .. image:: https://img.shields.io/pypi/format/openapi-core.svg
@@ -19,17 +19,17 @@ About
 #####
 
 Openapi-core is a Python library that adds client-side and server-side support
-for the `OpenAPI Specification v3 <https://github.com/OAI/OpenAPI-Specification>`__.
+for the `OpenAPI v3.0 <https://github.com/OAI/OpenAPI-Specification/blob/master/versions/3.0.3.md>`__
+and `OpenAPI v3.1 <https://github.com/OAI/OpenAPI-Specification/blob/main/versions/3.1.0.md>`__ specification.
+
 
 Key features
-************
+############
 
-* **Validation** of requests and responses
-* Schema **casting** and **unmarshalling**
-* Media type and parameters **deserialization**
-* **Security** providers (API keys, Cookie, Basic and Bearer HTTP authentications)
-* Custom **deserializers** and **formats**
-* **Integration** with libraries and frameworks
+* **Validation** and **unmarshalling** of request and response data (including webhooks)
+* **Integration** with popular libraries (Requests, Werkzeug) and frameworks (Django, Falcon, Flask, Starlette)
+* Customization with media type **deserializers** and format **unmarshallers**
+* **Security** data providers (API keys, Cookie, Basic and Bearer HTTP authentications)
 
 
 Documentation
@@ -43,106 +43,73 @@ Installation
 
 Recommended way (via pip):
 
-::
+.. code-block:: console
 
-    $ pip install openapi-core
+   pip install openapi-core
 
 Alternatively you can download the code and install from the repository:
 
-.. code-block:: bash
+.. code-block:: console
 
-   $ pip install -e git+https://github.com/p1c2u/openapi-core.git#egg=openapi_core
+   pip install -e git+https://github.com/python-openapi/openapi-core.git#egg=openapi_core
 
 
-Usage
-#####
+First steps
+###########
 
-Firstly create your specification object:
-
-.. code-block:: python
-
-   from json import load
-   from openapi_core import create_spec
-
-   with open('openapi.json', 'r') as spec_file:
-      spec_dict = load(spec_file)
-
-   spec = create_spec(spec_dict)
-
-Request
-*******
-
-Now you can use it to validate against requests
+Firstly create your specification object.
 
 .. code-block:: python
 
-   from openapi_core.validation.request.validators import RequestValidator
+   from openapi_core import Spec
 
-   validator = RequestValidator(spec)
-   result = validator.validate(request)
+   spec = Spec.from_file_path('openapi.json')
 
-   # raise errors if request invalid
-   result.raise_for_errors()
-
-   # get list of errors
-   errors = result.errors
-
-and unmarshal request data from validation result
+Now you can use it to validate and unmarshal against requests and/or responses. 
 
 .. code-block:: python
 
-   # get parameters object with path, query, cookies and headers parameters
-   validated_params = result.parameters
-   # or specific parameters
-   validated_path_params = result.parameters.path
+   from openapi_core import unmarshal_request
 
+   # raises error if request is invalid
+   result = unmarshal_request(request, spec=spec)
+
+Retrieve validated and unmarshalled request data
+
+.. code-block:: python
+
+   # get parameters
+   path_params = result.parameters.path
+   query_params = result.parameters.query
+   cookies_params = result.parameters.cookies
+   headers_params = result.parameters.headers
    # get body
-   validated_body = result.body
-
+   body = result.body
    # get security data
-   validated_security = result.security
+   security = result.security
 
-Request object should be instance of OpenAPIRequest class (See `Integrations <https://openapi-core.readthedocs.io/en/latest/integrations.html>`__).
+Request object should implement OpenAPI Request protocol. Check `Integrations <https://openapi-core.readthedocs.io/en/latest/integrations.html>`__ to find oficially supported implementations.
 
-Response
-********
+For more details read about `Unmarshalling <https://openapi-core.readthedocs.io/en/latest/unmarshalling.html>`__ process.
 
-You can also validate against responses
+If you just want to validate your request/response data without unmarshalling, read about `Validation <https://openapi-core.readthedocs.io/en/latest/validation.html>`__ instead.
 
-.. code-block:: python
-
-   from openapi_core.validation.response.validators import ResponseValidator
-
-   validator = ResponseValidator(spec)
-   result = validator.validate(request, response)
-
-   # raise errors if response invalid
-   result.raise_for_errors()
-
-   # get list of errors
-   errors = result.errors
-
-and unmarshal response data from validation result
-
-.. code-block:: python
-
-   # get headers
-   validated_headers = result.headers
-
-   # get data
-   validated_data = result.data
-
-Response object should be instance of OpenAPIResponse class (See `Integrations <https://openapi-core.readthedocs.io/en/latest/integrations.html>`__).
 
 Related projects
 ################
+* `openapi-spec-validator <https://github.com/python-openapi/openapi-spec-validator>`__
+   Python library that validates OpenAPI Specs against the OpenAPI 2.0 (aka Swagger), OpenAPI 3.0 and OpenAPI 3.1 specification. The validator aims to check for full compliance with the Specification.
+* `openapi-schema-validator <https://github.com/python-openapi/openapi-schema-validator>`__
+   Python library that validates schema against the OpenAPI Schema Specification v3.0 and OpenAPI Schema Specification v3.1.
 * `bottle-openapi-3 <https://github.com/cope-systems/bottle-openapi-3>`__
    OpenAPI 3.0 Support for the Bottle Web Framework
-* `openapi-spec-validator <https://github.com/p1c2u/openapi-spec-validator>`__
-   Python library that validates OpenAPI Specs against the OpenAPI 2.0 (aka Swagger) and OpenAPI 3.0 specification
-* `openapi-schema-validator <https://github.com/p1c2u/openapi-schema-validator>`__
-   Python library that validates schema against the OpenAPI Schema Specification v3.0.
 * `pyramid_openapi3 <https://github.com/niteoweb/pyramid_openapi3>`__
    Pyramid addon for OpenAPI3 validation of requests and responses.
 * `tornado-openapi3 <https://github.com/correl/tornado-openapi3>`__
    Tornado OpenAPI 3 request and response validation library.
+
+
+License
+#######
+
+The project is under the terms of BSD 3-Clause License.

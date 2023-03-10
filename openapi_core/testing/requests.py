@@ -1,47 +1,42 @@
 """OpenAPI core testing requests module"""
-from urllib.parse import urljoin
+from typing import Any
+from typing import Dict
+from typing import Optional
 
 from werkzeug.datastructures import Headers
 from werkzeug.datastructures import ImmutableMultiDict
 
-from openapi_core.validation.request.datatypes import OpenAPIRequest
-from openapi_core.validation.request.datatypes import RequestParameters
+from openapi_core.datatypes import RequestParameters
 
 
-class MockRequestFactory:
-    @classmethod
-    def create(
-        cls,
-        host_url,
-        method,
-        path,
-        path_pattern=None,
-        args=None,
-        view_args=None,
-        headers=None,
-        cookies=None,
-        data=None,
-        mimetype="application/json",
+class MockRequest:
+    def __init__(
+        self,
+        host_url: str,
+        method: str,
+        path: str,
+        path_pattern: Optional[str] = None,
+        args: Optional[Dict[str, Any]] = None,
+        view_args: Optional[Dict[str, Any]] = None,
+        headers: Optional[Dict[str, Any]] = None,
+        cookies: Optional[Dict[str, Any]] = None,
+        data: Optional[str] = None,
+        mimetype: str = "application/json",
     ):
-        path_pattern = path_pattern or path
+        self.host_url = host_url
+        self.method = method.lower()
+        self.path = path
+        self.path_pattern = path_pattern
+        self.args = args
+        self.view_args = view_args
+        self.headers = headers
+        self.cookies = cookies
+        self.body = data or ""
+        self.mimetype = mimetype
 
-        path = view_args or {}
-        query = ImmutableMultiDict(args or {})
-        header = Headers(headers or {})
-        cookie = ImmutableMultiDict(cookies or {})
-        parameters = RequestParameters(
-            path=path,
-            query=query,
-            header=header,
-            cookie=cookie,
-        )
-        method = method.lower()
-        body = data or ""
-        full_url_pattern = urljoin(host_url, path_pattern)
-        return OpenAPIRequest(
-            full_url_pattern=full_url_pattern,
-            method=method,
-            parameters=parameters,
-            body=body,
-            mimetype=mimetype,
+        self.parameters = RequestParameters(
+            path=self.view_args or {},
+            query=ImmutableMultiDict(self.args or {}),
+            header=Headers(self.headers or {}),
+            cookie=ImmutableMultiDict(self.cookies or {}),
         )

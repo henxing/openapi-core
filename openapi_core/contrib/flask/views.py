@@ -1,10 +1,11 @@
 """OpenAPI core contrib flask views module"""
+from typing import Any
+
 from flask.views import MethodView
 
 from openapi_core.contrib.flask.decorators import FlaskOpenAPIViewDecorator
 from openapi_core.contrib.flask.handlers import FlaskOpenAPIErrorsHandler
-from openapi_core.validation.request.validators import RequestValidator
-from openapi_core.validation.response.validators import ResponseValidator
+from openapi_core.spec import Spec
 
 
 class FlaskOpenAPIView(MethodView):
@@ -12,15 +13,13 @@ class FlaskOpenAPIView(MethodView):
 
     openapi_errors_handler = FlaskOpenAPIErrorsHandler
 
-    def __init__(self, spec):
+    def __init__(self, spec: Spec):
         super().__init__()
-        self.request_validator = RequestValidator(spec)
-        self.response_validator = ResponseValidator(spec)
+        self.spec = spec
 
-    def dispatch_request(self, *args, **kwargs):
+    def dispatch_request(self, *args: Any, **kwargs: Any) -> Any:
         decorator = FlaskOpenAPIViewDecorator(
-            request_validator=self.request_validator,
-            response_validator=self.response_validator,
+            self.spec,
             openapi_errors_handler=self.openapi_errors_handler,
         )
         return decorator(super().dispatch_request)(*args, **kwargs)

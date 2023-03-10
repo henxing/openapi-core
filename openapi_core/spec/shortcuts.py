@@ -1,21 +1,36 @@
 """OpenAPI core spec shortcuts module"""
-from jsonschema.validators import RefResolver
-from openapi_spec_validator import default_handlers
-from openapi_spec_validator import openapi_v3_spec_validator
-from openapi_spec_validator.validators import Dereferencer
+import warnings
+from typing import Any
+from typing import Dict
+from typing import Hashable
+from typing import Mapping
+from typing import Optional
 
-from openapi_core.spec.paths import SpecPath
+from jsonschema_spec import default_handlers
+from openapi_spec_validator.validation import openapi_spec_validator_proxy
+from openapi_spec_validator.validation.protocols import SupportsValidation
+
+from openapi_core.spec.paths import Spec
 
 
 def create_spec(
-    spec_dict,
-    spec_url="",
-    handlers=default_handlers,
-    validate_spec=True,
-):
-    if validate_spec:
-        openapi_v3_spec_validator.validate(spec_dict, spec_url=spec_url)
+    spec_dict: Mapping[Hashable, Any],
+    spec_url: str = "",
+    handlers: Dict[str, Any] = default_handlers,
+    validate_spec: bool = True,
+) -> Spec:
+    warnings.warn(
+        "create_spec function is deprecated. Use Spec.from_dict instead.",
+        DeprecationWarning,
+    )
 
-    spec_resolver = RefResolver(spec_url, spec_dict, handlers=handlers)
-    dereferencer = Dereferencer(spec_resolver)
-    return SpecPath.from_spec(spec_dict, dereferencer)
+    validator: Optional[SupportsValidation] = None
+    if validate_spec:
+        validator = openapi_spec_validator_proxy
+
+    return Spec.from_dict(
+        spec_dict,
+        spec_url=spec_url,
+        ref_resolver_handlers=handlers,
+        validator=validator,
+    )

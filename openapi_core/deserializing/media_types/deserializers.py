@@ -1,30 +1,29 @@
 import warnings
+from typing import Any
+from typing import Optional
 
+from openapi_core.deserializing.media_types.datatypes import (
+    DeserializerCallable,
+)
 from openapi_core.deserializing.media_types.exceptions import (
     MediaTypeDeserializeError,
 )
 
 
-class BaseMediaTypeDeserializer:
-    def __init__(self, mimetype):
-        self.mimetype = mimetype
-
-    def __call__(self, value):
-        raise NotImplementedError
-
-
-class UnsupportedMimetypeDeserializer(BaseMediaTypeDeserializer):
-    def __call__(self, value):
-        warnings.warn(f"Unsupported {self.mimetype} mimetype")
-        return value
-
-
-class CallableMediaTypeDeserializer(BaseMediaTypeDeserializer):
-    def __init__(self, mimetype, deserializer_callable):
+class CallableMediaTypeDeserializer:
+    def __init__(
+        self,
+        mimetype: str,
+        deserializer_callable: Optional[DeserializerCallable] = None,
+    ):
         self.mimetype = mimetype
         self.deserializer_callable = deserializer_callable
 
-    def __call__(self, value):
+    def deserialize(self, value: Any) -> Any:
+        if self.deserializer_callable is None:
+            warnings.warn(f"Unsupported {self.mimetype} mimetype")
+            return value
+
         try:
             return self.deserializer_callable(value)
         except (ValueError, TypeError, AttributeError):

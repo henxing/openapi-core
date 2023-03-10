@@ -1,6 +1,8 @@
 Integrations
 ============
 
+Openapi-core integrates with your popular libraries and frameworks. Each integration offers different levels of integration that help validate and unmarshal your request and response data.
+
 Bottle
 ------
 
@@ -16,21 +18,21 @@ The integration supports Django from version 3.0 and above.
 Middleware
 ~~~~~~~~~~
 
-Django can be integrated by middleware. Add `DjangoOpenAPIMiddleware` to your `MIDDLEWARE` list and define `OPENAPI_SPEC`.
+Django can be integrated by middleware. Add ``DjangoOpenAPIMiddleware`` to your ``MIDDLEWARE`` list and define ``OPENAPI_SPEC``.
 
 .. code-block:: python
 
    # settings.py
-   from openapi_core import create_spec
+   from openapi_core import Spec
 
    MIDDLEWARE = [
        # ...
        'openapi_core.contrib.django.middlewares.DjangoOpenAPIMiddleware',
    ]
 
-   OPENAPI_SPEC = create_spec(spec_dict)
+   OPENAPI_SPEC = Spec.from_dict(spec_dict)
 
-After that you have access to validation result object with all validated request data from Django view through request object.
+After that you have access to unmarshal result object with all validated request data from Django view through request object.
 
 .. code-block:: python
 
@@ -52,27 +54,25 @@ After that you have access to validation result object with all validated reques
 Low level
 ~~~~~~~~~
 
-You can use `DjangoOpenAPIRequest` as a Django request factory:
+You can use ``DjangoOpenAPIRequest`` as a Django request factory:
 
 .. code-block:: python
 
-   from openapi_core.validation.request.validators import RequestValidator
+   from openapi_core import unmarshal_request
    from openapi_core.contrib.django import DjangoOpenAPIRequest
 
    openapi_request = DjangoOpenAPIRequest(django_request)
-   validator = RequestValidator(spec)
-   result = validator.validate(openapi_request)
+   result = unmarshal_request(openapi_request, spec=spec)
 
-You can use `DjangoOpenAPIResponse` as a Django response factory:
+You can use ``DjangoOpenAPIResponse`` as a Django response factory:
 
 .. code-block:: python
 
-   from openapi_core.validation.response.validators import ResponseValidator
+   from openapi_core import unmarshal_response
    from openapi_core.contrib.django import DjangoOpenAPIResponse
 
    openapi_response = DjangoOpenAPIResponse(django_response)
-   validator = ResponseValidator(spec)
-   result = validator.validate(openapi_request, openapi_response)
+   result = unmarshal_response(openapi_request, openapi_response, spec=spec)
 
 
 Falcon
@@ -84,7 +84,7 @@ The integration supports Falcon from version 3.0 and above.
 Middleware
 ~~~~~~~~~~
 
-The Falcon API can be integrated by `FalconOpenAPIMiddleware` middleware.
+The Falcon API can be integrated by ``FalconOpenAPIMiddleware`` middleware.
 
 .. code-block:: python
 
@@ -113,27 +113,25 @@ After that you will have access to validation result object with all validated r
 Low level
 ~~~~~~~~~
 
-You can use `FalconOpenAPIRequest` as a Falcon request factory:
+You can use ``FalconOpenAPIRequest`` as a Falcon request factory:
 
 .. code-block:: python
 
-   from openapi_core.validation.request.validators import RequestValidator
-   from openapi_core.contrib.falcon import FalconOpenAPIRequestFactory
+   from openapi_core import unmarshal_request
+   from openapi_core.contrib.falcon import FalconOpenAPIRequest
 
-   openapi_request = FalconOpenAPIRequestFactory().create(falcon_request)
-   validator = RequestValidator(spec)
-   result = validator.validate(openapi_request)
+   openapi_request = FalconOpenAPIRequest(falcon_request)
+   result = unmarshal_request(openapi_request, spec=spec)
 
-You can use `FalconOpenAPIResponse` as a Falcon response factory:
+You can use ``FalconOpenAPIResponse`` as a Falcon response factory:
 
 .. code-block:: python
 
-   from openapi_core.validation.response.validators import ResponseValidator
-   from openapi_core.contrib.falcon import FalconOpenAPIResponseFactory
+   from openapi_core import unmarshal_response
+   from openapi_core.contrib.falcon import FalconOpenAPIResponse
 
-   openapi_response = FalconOpenAPIResponseFactory().create(falcon_response)
-   validator = ResponseValidator(spec)
-   result = validator.validate(openapi_request, openapi_response)
+   openapi_response = FalconOpenAPIResponse(falcon_response)
+   result = unmarshal_response(openapi_request, openapi_response, spec=spec)
 
 
 Flask
@@ -144,7 +142,7 @@ This section describes integration with `Flask <https://flask.palletsprojects.co
 Decorator
 ~~~~~~~~~
 
-Flask views can be integrated by `FlaskOpenAPIViewDecorator` decorator.
+Flask views can be integrated by ``FlaskOpenAPIViewDecorator`` decorator.
 
 .. code-block:: python
 
@@ -167,7 +165,7 @@ If you want to decorate class based view you can use the decorators attribute:
 View
 ~~~~
 
-As an alternative to the decorator-based integration, a Flask method based views can be integrated by inheritance from `FlaskOpenAPIView` class.
+As an alternative to the decorator-based integration, a Flask method based views can be integrated by inheritance from ``FlaskOpenAPIView`` class.
 
 .. code-block:: python
 
@@ -181,7 +179,7 @@ As an alternative to the decorator-based integration, a Flask method based views
 Request parameters
 ~~~~~~~~~~~~~~~~~~
 
-In Flask, all unmarshalled request data are provided as Flask request object's `openapi.parameters` attribute
+In Flask, all unmarshalled request data are provided as Flask request object's ``openapi.parameters`` attribute
 
 .. code-block:: python
 
@@ -196,27 +194,17 @@ In Flask, all unmarshalled request data are provided as Flask request object's `
 Low level
 ~~~~~~~~~
 
-You can use `FlaskOpenAPIRequest` as a Flask/Werkzeug request factory:
+You can use ``FlaskOpenAPIRequest`` as a Flask request factory:
 
 .. code-block:: python
 
-   from openapi_core.validation.request.validators import RequestValidator
+   from openapi_core import unmarshal_request
    from openapi_core.contrib.flask import FlaskOpenAPIRequest
 
    openapi_request = FlaskOpenAPIRequest(flask_request)
-   validator = RequestValidator(spec)
-   result = validator.validate(openapi_request)
+   result = unmarshal_request(openapi_request, spec=spec)
 
-You can use `FlaskOpenAPIResponse` as a Flask/Werkzeug response factory:
-
-.. code-block:: python
-
-   from openapi_core.validation.response.validators import ResponseValidator
-   from openapi_core.contrib.flask import FlaskOpenAPIResponse
-
-   openapi_response = FlaskOpenAPIResponse(flask_response)
-   validator = ResponseValidator(spec)
-   result = validator.validate(openapi_request, openapi_response)
+For response factory see `Werkzeug`_ integration.
 
 
 Pyramid
@@ -233,29 +221,97 @@ This section describes integration with `Requests <https://requests.readthedocs.
 Low level
 ~~~~~~~~~
 
-You can use `RequestsOpenAPIRequest` as a Requests request factory:
+You can use ``RequestsOpenAPIRequest`` as a Requests request factory:
 
 .. code-block:: python
 
-   from openapi_core.validation.request.validators import RequestValidator
+   from openapi_core import unmarshal_request
    from openapi_core.contrib.requests import RequestsOpenAPIRequest
 
    openapi_request = RequestsOpenAPIRequest(requests_request)
-   validator = RequestValidator(spec)
-   result = validator.validate(openapi_request)
+   result = unmarshal_request(openapi_request, spec=spec)
 
-You can use `RequestsOpenAPIResponse` as a Requests response factory:
+You can use ``RequestsOpenAPIResponse`` as a Requests response factory:
 
 .. code-block:: python
 
-   from openapi_core.validation.response.validators import ResponseValidator
+   from openapi_core import unmarshal_response
    from openapi_core.contrib.requests import RequestsOpenAPIResponse
 
    openapi_response = RequestsOpenAPIResponse(requests_response)
-   validator = ResponseValidator(spec)
-   result = validator.validate(openapi_request, openapi_response)
+   result = unmarshal_response(openapi_request, openapi_response, spec=spec)
+
+
+You can use ``RequestsOpenAPIWebhookRequest`` as a Requests webhook request factory:
+
+.. code-block:: python
+
+   from openapi_core import unmarshal_request
+   from openapi_core.contrib.requests import RequestsOpenAPIWebhookRequest
+
+   openapi_webhook_request = RequestsOpenAPIWebhookRequest(requests_request, "my_webhook")
+   result = unmarshal_request(openapi_webhook_request, spec=spec)
+
+
+Starlette
+---------
+
+This section describes integration with `Starlette <https://www.starlette.io>`__  ASGI framework.
+
+Low level
+~~~~~~~~~
+
+You can use ``StarletteOpenAPIRequest`` as a Starlette request factory:
+
+.. code-block:: python
+
+   from openapi_core import unmarshal_request
+   from openapi_core.contrib.starlette import StarletteOpenAPIRequest
+
+   openapi_request = StarletteOpenAPIRequest(starlette_request)
+   result = unmarshal_request(openapi_request, spec=spec)
+
+You can use ``StarletteOpenAPIResponse`` as a Starlette response factory:
+
+.. code-block:: python
+
+   from openapi_core import unmarshal_response
+   from openapi_core.contrib.starlette import StarletteOpenAPIResponse
+
+   openapi_response = StarletteOpenAPIResponse(starlette_response)
+   result = unmarshal_response(openapi_request, openapi_response, spec=spec)
+
 
 Tornado
 -------
 
 See `tornado-openapi3 <https://github.com/correl/tornado-openapi3>`_ project.
+
+
+Werkzeug
+--------
+
+This section describes integration with `Werkzeug <https://werkzeug.palletsprojects.com>`__ a WSGI web application library.
+
+Low level
+~~~~~~~~~
+
+You can use ``WerkzeugOpenAPIRequest`` as a Werkzeug request factory:
+
+.. code-block:: python
+
+   from openapi_core import unmarshal_request
+   from openapi_core.contrib.werkzeug import WerkzeugOpenAPIRequest
+
+   openapi_request = WerkzeugOpenAPIRequest(werkzeug_request)
+   result = unmarshal_request(openapi_request, spec=spec)
+
+You can use ``WerkzeugOpenAPIResponse`` as a Werkzeug response factory:
+
+.. code-block:: python
+
+   from openapi_core import unmarshal_response
+   from openapi_core.contrib.werkzeug import WerkzeugOpenAPIResponse
+
+   openapi_response = WerkzeugOpenAPIResponse(werkzeug_response)
+   result = unmarshal_response(openapi_request, openapi_response, spec=spec)

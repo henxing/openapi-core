@@ -1,37 +1,40 @@
 import warnings
+from typing import Any
+from typing import Callable
+from typing import List
+from typing import Optional
 
 from openapi_core.deserializing.exceptions import DeserializeError
+from openapi_core.deserializing.parameters.datatypes import (
+    DeserializerCallable,
+)
 from openapi_core.deserializing.parameters.exceptions import (
     EmptyQueryParameterValue,
 )
 from openapi_core.schema.parameters import get_aslist
 from openapi_core.schema.parameters import get_explode
+from openapi_core.spec import Spec
 
 
-class BaseParameterDeserializer:
-    def __init__(self, param_or_header, style):
+class CallableParameterDeserializer:
+    def __init__(
+        self,
+        param_or_header: Spec,
+        style: str,
+        deserializer_callable: Optional[DeserializerCallable] = None,
+    ):
         self.param_or_header = param_or_header
         self.style = style
-
-    def __call__(self, value):
-        raise NotImplementedError
-
-
-class UnsupportedStyleDeserializer(BaseParameterDeserializer):
-    def __call__(self, value):
-        warnings.warn(f"Unsupported {self.style} style")
-        return value
-
-
-class CallableParameterDeserializer(BaseParameterDeserializer):
-    def __init__(self, param_or_header, style, deserializer_callable):
-        super().__init__(param_or_header, style)
         self.deserializer_callable = deserializer_callable
 
         self.aslist = get_aslist(self.param_or_header)
         self.explode = get_explode(self.param_or_header)
 
-    def __call__(self, value):
+    def deserialize(self, value: Any) -> Any:
+        if self.deserializer_callable is None:
+            warnings.warn(f"Unsupported {self.style} style")
+            return value
+
         # if "in" not defined then it's a Header
         if "allowEmptyValue" in self.param_or_header:
             warnings.warn(

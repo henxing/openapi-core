@@ -2,7 +2,7 @@ import pytest
 
 from openapi_core.casting.schemas.exceptions import CastError
 from openapi_core.casting.schemas.factories import SchemaCastersFactory
-from openapi_core.spec.paths import SpecPath
+from openapi_core.spec.paths import Spec
 
 
 class TestSchemaCaster:
@@ -20,21 +20,23 @@ class TestSchemaCaster:
                 "type": "number",
             },
         }
-        schema = SpecPath.from_spec(spec)
+        schema = Spec.from_dict(spec, validator=None)
         value = ["test", "test2"]
 
         with pytest.raises(CastError):
             caster_factory(schema)(value)
 
-    def test_array_invalid_value(self, caster_factory):
+    @pytest.mark.parametrize("value", [3.14, "foo", b"foo"])
+    def test_array_invalid_value(self, value, caster_factory):
         spec = {
             "type": "array",
             "items": {
-                "type": "number",
+                "oneOf": [{"type": "number"}, {"type": "string"}],
             },
         }
-        schema = SpecPath.from_spec(spec)
-        value = 3.14
+        schema = Spec.from_dict(spec, validator=None)
 
-        with pytest.raises(CastError):
+        with pytest.raises(
+            CastError, match=f"Failed to cast value to array type: {value}"
+        ):
             caster_factory(schema)(value)

@@ -37,6 +37,7 @@ extensions = [
     "sphinx.ext.intersphinx",
     "sphinx.ext.coverage",
     "sphinx.ext.viewcode",
+    "sphinx_immaterial",
 ]
 
 # Add any paths that contain templates here, relative to this directory.
@@ -53,9 +54,52 @@ exclude_patterns = ["_build", "Thumbs.db", ".DS_Store"]
 # The theme to use for HTML and HTML Help pages.  See the documentation for
 # a list of builtin themes.
 #
-html_theme = "sphinx_rtd_theme"
+html_theme = "sphinx_immaterial"
 
 # Add any paths that contain custom static files (such as style sheets) here,
 # relative to this directory. They are copied after the builtin static files,
 # so a file named "default.css" will overwrite the builtin "default.css".
 html_static_path = []
+
+# Set link name generated in the top bar.
+html_title = "openapi-core"
+
+# Material theme options (see theme.conf for more information)
+html_theme_options = {
+    "analytics": {
+        "provider": "google",
+        "property": "G-J6T05Z51NY",
+    },
+    "repo_url": "https://github.com/python-openapi/openapi-core/",
+    "repo_name": "openapi-core",
+    "repo_type": "github",
+    "icon": {
+        "repo": "fontawesome/brands/github-alt",
+        "edit": "material/file-edit-outline",
+    },
+    "palette": [
+        {
+            "media": "(prefers-color-scheme: dark)",
+            "scheme": "slate",
+            "primary": "lime",
+            "accent": "amber",
+            "scheme": "slate",
+            "toggle": {
+                "icon": "material/toggle-switch",
+                "name": "Switch to light mode",
+            },
+        },
+        {
+            "media": "(prefers-color-scheme: light)",
+            "scheme": "default",
+            "primary": "lime",
+            "accent": "amber",
+            "toggle": {
+                "icon": "material/toggle-switch-off-outline",
+                "name": "Switch to dark mode",
+            },
+        },
+    ],
+    # If False, expand all TOC entries
+    "globaltoc_collapse": False,
+}

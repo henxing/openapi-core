@@ -1,16 +1,16 @@
 import pytest
 
-from openapi_core.shortcuts import create_spec
-
 
 class TestMinimal:
-
-    spec_paths = ["data/v3.0/path_param.yaml"]
-
-    @pytest.mark.parametrize("spec_path", spec_paths)
-    def test_param_present(self, factory, spec_path):
-        spec_dict = factory.spec_from_file(spec_path)
-        spec = create_spec(spec_dict)
+    @pytest.mark.parametrize(
+        "spec_file",
+        [
+            "data/v3.0/path_param.yaml",
+            "data/v3.1/path_param.yaml",
+        ],
+    )
+    def test_param_present(self, spec_file, factory):
+        spec = factory.spec_from_file(spec_file)
 
         path = spec / "paths#/resource/{resId}"
 

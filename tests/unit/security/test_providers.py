@@ -1,7 +1,7 @@
 import pytest
 
 from openapi_core.security.providers import HttpProvider
-from openapi_core.spec.paths import SpecPath
+from openapi_core.spec.paths import Spec
 from openapi_core.testing import MockRequest
 
 
@@ -32,9 +32,9 @@ class TestHttpProvider:
             "/pets",
             headers=headers,
         )
-        scheme = SpecPath.from_spec(spec)
+        scheme = Spec.from_dict(spec, validator=None)
         provider = HttpProvider(scheme)
 
-        result = provider(request)
+        result = provider(request.parameters)
 
         assert result == value

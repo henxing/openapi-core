@@ -1,17 +1,11 @@
+from openapi_core.contrib.requests.requests import RequestsOpenAPIRequest
 from openapi_core.contrib.requests.requests import (
-    RequestsOpenAPIRequestFactory,
+    RequestsOpenAPIWebhookRequest,
 )
-from openapi_core.contrib.requests.responses import (
-    RequestsOpenAPIResponseFactory,
-)
-
-# backward compatibility
-RequestsOpenAPIRequest = RequestsOpenAPIRequestFactory.create
-RequestsOpenAPIResponse = RequestsOpenAPIResponseFactory.create
+from openapi_core.contrib.requests.responses import RequestsOpenAPIResponse
 
 __all__ = [
-    "RequestsOpenAPIRequestFactory",
-    "RequestsOpenAPIResponseFactory",
     "RequestsOpenAPIRequest",
     "RequestsOpenAPIResponse",
+    "RequestsOpenAPIWebhookRequest",
 ]

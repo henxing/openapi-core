@@ -1,14 +1,14 @@
 """OpenAPI core contrib django requests module"""
 import re
-from urllib.parse import urljoin
+from typing import Optional
 
+from django.http.request import HttpRequest
 from werkzeug.datastructures import Headers
 from werkzeug.datastructures import ImmutableMultiDict
 
-from openapi_core.validation.request.datatypes import OpenAPIRequest
-from openapi_core.validation.request.datatypes import RequestParameters
+from openapi_core.datatypes import RequestParameters
 
-# https://docs.djangoproject.com/en/2.2/topics/http/urls/
+# https://docs.djangoproject.com/en/stable/topics/http/urls/
 #
 # Currently unsupported are :
 #   - nested arguments, e.g.: ^comments/(?:page-(?P<page_number>\d+)/)?$
@@ -16,68 +16,73 @@ from openapi_core.validation.request.datatypes import RequestParameters
 #   - multiple named parameters between a single pair of slashes
 #     e.g.: <page_slug>-<page_id>/edit/
 #
-# The regex matches everything, except a "/" until "<". Than only the name
+# The regex matches everything, except a "/" until "<". Then only the name
 # is exported, after which it matches ">" and everything until a "/".
-PATH_PARAMETER_PATTERN = r"(?:[^\/]*?)<(?:(?:.*?:))*?(\w+)>(?:[^\/]*)"
+# A check is made to ensure that "/" is not in an excluded character set such
+# as may be found with Django REST Framwork's default value pattern, "[^/.]+".
+PATH_PARAMETER_PATTERN = (
+    r"(?:[^/]*?)<(?:(?:.*?:))*?(\w+)>(?:(?:[^/]*?\[\^[^/]*/)?[^/]*)"
+)
 
 
-class DjangoOpenAPIRequestFactory:
-
+class DjangoOpenAPIRequest:
     path_regex = re.compile(PATH_PARAMETER_PATTERN)
 
-    def create(self, request):
-        return OpenAPIRequest(
-            full_url_pattern=self._get_full_url_pattern(request),
-            method=self._get_method(request),
-            parameters=self._get_parameters(request),
-            body=self._get_body(request),
-            mimetype=self._get_mimetype(request),
+    def __init__(self, request: HttpRequest):
+        if not isinstance(request, HttpRequest):
+            raise TypeError(f"'request' argument is not type of {HttpRequest}")
+        self.request = request
+
+        path = (
+            self.request.resolver_match
+            and self.request.resolver_match.kwargs
+            or {}
+        )
+        self.parameters = RequestParameters(
+            path=path,
+            query=ImmutableMultiDict(self.request.GET),
+            header=Headers(self.request.headers.items()),
+            cookie=ImmutableMultiDict(dict(self.request.COOKIES)),
         )
 
-    def _get_parameters(self, request):
-        return RequestParameters(
-            path=self._get_path(request),
-            query=self._get_query(request),
-            header=self._get_header(request),
-            cookie=self._get_cookie(request),
-        )
+    @property
+    def host_url(self) -> str:
+        assert isinstance(self.request._current_scheme_host, str)
+        return self.request._current_scheme_host
 
-    def _get_path(self, request):
-        return request.resolver_match and request.resolver_match.kwargs or {}
+    @property
+    def path(self) -> str:
+        assert isinstance(self.request.path, str)
+        return self.request.path
 
-    def _get_query(self, request):
-        return ImmutableMultiDict(request.GET)
+    @property
+    def path_pattern(self) -> Optional[str]:
+        if self.request.resolver_match is None:
+            return None
 
-    def _get_header(self, request):
-        return Headers(request.headers.items())
+        route = self.path_regex.sub(r"{\1}", self.request.resolver_match.route)
+        # Delete start and end marker to allow concatenation.
+        if route[:1] == "^":
+            route = route[1:]
+        if route[-1:] == "$":
+            route = route[:-1]
+        return "/" + route
 
-    def _get_cookie(self, request):
-        return ImmutableMultiDict(dict(request.COOKIES))
+    @property
+    def method(self) -> str:
+        if self.request.method is None:
+            return ""
+        assert isinstance(self.request.method, str)
+        return self.request.method.lower()
 
-    def _get_full_url_pattern(self, request):
-        if request.resolver_match is None:
-            path_pattern = request.path
-        else:
-            route = self.path_regex.sub(r"{\1}", request.resolver_match.route)
-            # Delete start and end marker to allow concatenation.
-            if route[:1] == "^":
-                route = route[1:]
-            if route[-1:] == "$":
-                route = route[:-1]
-            path_pattern = "/" + route
-
-        current_scheme_host = request._current_scheme_host
-        return urljoin(current_scheme_host, path_pattern)
-
-    def _get_method(self, request):
-        return request.method.lower()
-
-    def _get_body(self, request):
-        # Handle django.http.HttpRequest differently than
-        # rest_framework.response.Request
+    @property
+    def body(self) -> str:
         if hasattr(request, "data"):
-            return request.data
-        return request.body
+            assert isinstance(self.request.data, bytes)
+            return self.request.data.decode("utf-8")
+        assert isinstance(self.request.body, bytes)
+        return self.request.body.decode("utf-8")
 
-    def _get_mimetype(self, request):
-        return request.content_type
+    @property
+    def mimetype(self) -> str:
+        return self.request.content_type or ""

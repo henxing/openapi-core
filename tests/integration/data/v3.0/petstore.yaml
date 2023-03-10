@@ -81,15 +81,7 @@ paths:
           content:
             application/json:
               schema:
-                type: object
-                required:
-                  - lat
-                  - lon
-                properties:
-                  lat:
-                    type: number
-                  lon:
-                    type: number
+                $ref: "#/components/schemas/Coordinates"
       responses:
         '200':
           $ref: "#/components/responses/PetsResponse"
@@ -236,11 +228,28 @@ paths:
               schema:
                 type: boolean
               required: true
+            x-delete-date:
+              description: Confirmation automation date
+              schema:
+                type: string
+                format: date
         default:
           $ref: "#/components/responses/ErrorResponse"
 components:
   schemas:
+    Coordinates:
+      x-model: Coordinates
+      type: object
+      required:
+        - lat
+        - lon
+      properties:
+        lat:
+          type: number
+        lon:
+          type: number
     Userdata:
+      x-model: Userdata
       type: object
       required:
         - name
@@ -411,7 +420,7 @@ components:
       required:
         - title
         - status
-        - class
+        - type
       properties:
         title:
           type: string
@@ -419,7 +428,7 @@ components:
           type: integer
           format: int32
           default: 400
-        class:
+        type:
           type: string
     StandardErrors:
       type: object
@@ -457,6 +466,7 @@ components:
       content:
         application/json:
           schema:
+            x-model: Error
             oneOf:
               - $ref: "#/components/schemas/StandardErrors"
               - $ref: "#/components/schemas/ExtendedError"

@@ -6,7 +6,6 @@ from falcon.constants import MEDIA_URLENCODED
 
 
 class BaseTestFalconProject:
-
     api_key = "12345"
 
     @property
@@ -27,7 +26,20 @@ class TestPetListResource(BaseTestFalconProject):
                 "/v1/pets", host="petstore.swagger.io", headers=headers
             )
 
+        expected_data = {
+            "errors": [
+                {
+                    "type": (
+                        "<class 'openapi_core.validation.request.exceptions."
+                        "MissingRequiredParameter'>"
+                    ),
+                    "status": 400,
+                    "title": "Missing required query parameter: limit",
+                }
+            ]
+        }
         assert response.status_code == 400
+        assert response.json == expected_data
 
     def test_get_valid(self, client):
         headers = {
@@ -65,7 +77,7 @@ class TestPetListResource(BaseTestFalconProject):
         expected_data = {
             "errors": [
                 {
-                    "class": (
+                    "type": (
                         "<class 'openapi_core.templating.paths.exceptions."
                         "ServerNotFound'>"
                     ),
@@ -119,12 +131,12 @@ class TestPetListResource(BaseTestFalconProject):
         expected_data = {
             "errors": [
                 {
-                    "class": (
-                        "<class 'openapi_core.exceptions."
+                    "type": (
+                        "<class 'openapi_core.validation.request.exceptions."
                         "MissingRequiredParameter'>"
                     ),
                     "status": 400,
-                    "title": "Missing required parameter: api-key",
+                    "title": "Missing required header parameter: api-key",
                 }
             ]
         }
@@ -155,7 +167,7 @@ class TestPetListResource(BaseTestFalconProject):
         expected_data = {
             "errors": [
                 {
-                    "class": (
+                    "type": (
                         "<class 'openapi_core.templating.media_types."
                         "exceptions.MediaTypeNotFound'>"
                     ),
@@ -198,28 +210,40 @@ class TestPetListResource(BaseTestFalconProject):
         expected_data = {
             "errors": [
                 {
-                    "class": (
-                        "<class 'openapi_core.exceptions."
+                    "type": (
+                        "<class 'openapi_core.validation.request.exceptions."
                         "MissingRequiredParameter'>"
                     ),
                     "status": 400,
-                    "title": "Missing required parameter: user",
+                    "title": "Missing required cookie parameter: user",
                 }
             ]
         }
         assert response.status_code == 400
         assert response.json == expected_data
 
-    def test_post_valid(self, client):
+    @pytest.mark.parametrize(
+        "data_json",
+        [
+            {
+                "id": 12,
+                "name": "Cat",
+                "ears": {
+                    "healthy": True,
+                },
+            },
+            {
+                "id": 12,
+                "name": "Bird",
+                "wings": {
+                    "healthy": True,
+                },
+            },
+        ],
+    )
+    def test_post_valid(self, client, data_json):
         cookies = {"user": 1}
         content_type = "application/json"
-        data_json = {
-            "id": 12,
-            "name": "Cat",
-            "ears": {
-                "healthy": True,
-            },
-        }
         headers = {
             "Authorization": "Basic testuser",
             "Api-Key": self.api_key_encoded,
@@ -249,7 +273,7 @@ class TestPetDetailResource:
         expected_data = {
             "errors": [
                 {
-                    "class": (
+                    "type": (
                         "<class 'openapi_core.templating.paths.exceptions."
                         "ServerNotFound'>"
                     ),
@@ -283,12 +307,15 @@ class TestPetDetailResource:
         expected_data = {
             "errors": [
                 {
-                    "class": (
-                        "<class 'openapi_core.validation.exceptions."
-                        "InvalidSecurity'>"
+                    "type": (
+                        "<class 'openapi_core.templating.security.exceptions."
+                        "SecurityNotFound'>"
                     ),
                     "status": 403,
-                    "title": "Security not valid for any requirement",
+                    "title": (
+                        "Security not found. Schemes not valid for any "
+                        "requirement: [['petstore_auth']]"
+                    ),
                 }
             ]
         }
@@ -324,7 +351,7 @@ class TestPetDetailResource:
         expected_data = {
             "errors": [
                 {
-                    "class": (
+                    "type": (
                         "<class 'openapi_core.templating.paths.exceptions."
                         "OperationNotFound'>"
                     ),

@@ -4,18 +4,16 @@ from flask import jsonify
 from flask import make_response
 
 from openapi_core.contrib.flask.decorators import FlaskOpenAPIViewDecorator
-from openapi_core.shortcuts import create_spec
-from openapi_core.validation.request.datatypes import Parameters
+from openapi_core.datatypes import Parameters
 
 
 class TestFlaskOpenAPIDecorator:
-
     view_response_callable = None
 
     @pytest.fixture
     def spec(self, factory):
         specfile = "contrib/flask/data/v3.0/flask_factory.yaml"
-        return create_spec(factory.spec_from_file(specfile))
+        return factory.spec_from_file(specfile)
 
     @pytest.fixture
     def decorator(self, spec):
@@ -175,7 +173,7 @@ class TestFlaskOpenAPIDecorator:
         }
         assert result.json == expected_data
 
-    def test_valid(self, client):
+    def test_valid_response_object(self, client):
         def view_response_callable(*args, **kwargs):
             from flask.globals import request
 
@@ -189,6 +187,50 @@ class TestFlaskOpenAPIDecorator:
             resp = jsonify(data="data")
             resp.headers["X-Rate-Limit"] = "12"
             return resp
+
+        self.view_response_callable = view_response_callable
+
+        result = client.get("/browse/12/")
+
+        assert result.status_code == 200
+        assert result.json == {
+            "data": "data",
+        }
+
+    def test_valid_tuple_str(self, client):
+        def view_response_callable(*args, **kwargs):
+            from flask.globals import request
+
+            assert request.openapi
+            assert not request.openapi.errors
+            assert request.openapi.parameters == Parameters(
+                path={
+                    "id": 12,
+                }
+            )
+            return ("Not found", 404)
+
+        self.view_response_callable = view_response_callable
+
+        result = client.get("/browse/12/")
+
+        assert result.status_code == 404
+        assert result.text == "Not found"
+
+    def test_valid_tuple_dict(self, client):
+        def view_response_callable(*args, **kwargs):
+            from flask.globals import request
+
+            assert request.openapi
+            assert not request.openapi.errors
+            assert request.openapi.parameters == Parameters(
+                path={
+                    "id": 12,
+                }
+            )
+            body = dict(data="data")
+            headers = {"X-Rate-Limit": "12"}
+            return (body, headers)
 
         self.view_response_callable = view_response_callable
 

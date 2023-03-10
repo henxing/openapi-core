@@ -8,7 +8,6 @@ import pytest
 
 
 class BaseTestDjangoProject:
-
     api_key = "12345"
 
     @property
@@ -54,12 +53,12 @@ class TestPetListView(BaseTestDjangoProject):
         expected_data = {
             "errors": [
                 {
-                    "class": (
-                        "<class 'openapi_core.exceptions."
+                    "type": (
+                        "<class 'openapi_core.validation.request.exceptions."
                         "MissingRequiredParameter'>"
                     ),
                     "status": 400,
-                    "title": "Missing required parameter: limit",
+                    "title": "Missing required query parameter: limit",
                 }
             ]
         }
@@ -101,7 +100,7 @@ class TestPetListView(BaseTestDjangoProject):
         expected_data = {
             "errors": [
                 {
-                    "class": (
+                    "type": (
                         "<class 'openapi_core.templating.paths.exceptions."
                         "ServerNotFound'>"
                     ),
@@ -148,12 +147,12 @@ class TestPetListView(BaseTestDjangoProject):
         expected_data = {
             "errors": [
                 {
-                    "class": (
-                        "<class 'openapi_core.exceptions."
+                    "type": (
+                        "<class 'openapi_core.validation.request.exceptions."
                         "MissingRequiredParameter'>"
                     ),
                     "status": 400,
-                    "title": "Missing required parameter: api-key",
+                    "title": "Missing required header parameter: api-key",
                 }
             ]
         }
@@ -176,7 +175,7 @@ class TestPetListView(BaseTestDjangoProject):
         expected_data = {
             "errors": [
                 {
-                    "class": (
+                    "type": (
                         "<class 'openapi_core.templating.media_types."
                         "exceptions.MediaTypeNotFound'>"
                     ),
@@ -213,28 +212,40 @@ class TestPetListView(BaseTestDjangoProject):
         expected_data = {
             "errors": [
                 {
-                    "class": (
-                        "<class 'openapi_core.exceptions."
+                    "type": (
+                        "<class 'openapi_core.validation.request.exceptions."
                         "MissingRequiredParameter'>"
                     ),
                     "status": 400,
-                    "title": "Missing required parameter: user",
+                    "title": "Missing required cookie parameter: user",
                 }
             ]
         }
         assert response.status_code == 400
         assert response.json() == expected_data
 
-    def test_post_valid(self, client):
+    @pytest.mark.parametrize(
+        "data_json",
+        [
+            {
+                "id": 12,
+                "name": "Cat",
+                "ears": {
+                    "healthy": True,
+                },
+            },
+            {
+                "id": 12,
+                "name": "Bird",
+                "wings": {
+                    "healthy": True,
+                },
+            },
+        ],
+    )
+    def test_post_valid(self, client, data_json):
         client.cookies.load({"user": 1})
         content_type = "application/json"
-        data_json = {
-            "id": 12,
-            "name": "Cat",
-            "ears": {
-                "healthy": True,
-            },
-        }
         headers = {
             "HTTP_AUTHORIZATION": "Basic testuser",
             "HTTP_HOST": "staging.gigantic-server.com",
@@ -267,12 +278,15 @@ class TestPetDetailView(BaseTestDjangoProject):
         expected_data = {
             "errors": [
                 {
-                    "class": (
-                        "<class 'openapi_core.validation.exceptions."
-                        "InvalidSecurity'>"
+                    "type": (
+                        "<class 'openapi_core.templating.security.exceptions."
+                        "SecurityNotFound'>"
                     ),
                     "status": 403,
-                    "title": "Security not valid for any requirement",
+                    "title": (
+                        "Security not found. Schemes not valid for any "
+                        "requirement: [['petstore_auth']]"
+                    ),
                 }
             ]
         }
@@ -289,7 +303,7 @@ class TestPetDetailView(BaseTestDjangoProject):
         expected_data = {
             "errors": [
                 {
-                    "class": (
+                    "type": (
                         "<class 'openapi_core.templating.paths.exceptions."
                         "OperationNotFound'>"
                     ),
