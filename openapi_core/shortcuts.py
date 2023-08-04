@@ -1,5 +1,4 @@
 """OpenAPI core shortcuts module"""
-import warnings
 from typing import Any
 from typing import Dict
 from typing import Optional
@@ -21,9 +20,6 @@ from openapi_core.unmarshalling.request.protocols import RequestUnmarshaller
 from openapi_core.unmarshalling.request.protocols import (
     WebhookRequestUnmarshaller,
 )
-from openapi_core.unmarshalling.request.proxies import (
-    SpecRequestValidatorProxy,
-)
 from openapi_core.unmarshalling.request.types import AnyRequestUnmarshallerType
 from openapi_core.unmarshalling.request.types import RequestUnmarshallerType
 from openapi_core.unmarshalling.request.types import (
@@ -38,9 +34,6 @@ from openapi_core.unmarshalling.response.datatypes import (
 from openapi_core.unmarshalling.response.protocols import ResponseUnmarshaller
 from openapi_core.unmarshalling.response.protocols import (
     WebhookResponseUnmarshaller,
-)
-from openapi_core.unmarshalling.response.proxies import (
-    SpecResponseValidatorProxy,
 )
 from openapi_core.unmarshalling.response.types import (
     AnyResponseUnmarshallerType,
@@ -285,51 +278,14 @@ def validate_request(
     request: AnyRequest,
     spec: Spec,
     base_url: Optional[str] = None,
-    validator: Optional[SpecRequestValidatorProxy] = None,
     cls: Optional[AnyRequestValidatorType] = None,
     **validator_kwargs: Any,
 ) -> Optional[RequestUnmarshalResult]:
-    if isinstance(spec, (Request, WebhookRequest)) and isinstance(
-        request, Spec
-    ):
-        warnings.warn(
-            "spec parameter as a first argument is deprecated. "
-            "Move it to second argument instead.",
-            DeprecationWarning,
-        )
-        request, spec = spec, request
-
     if not isinstance(request, (Request, WebhookRequest)):
         raise TypeError("'request' argument is not type of (Webhook)Request")
     if not isinstance(spec, Spec):
         raise TypeError("'spec' argument is not type of Spec")
 
-    if validator is not None and isinstance(request, Request):
-        warnings.warn(
-            "validator parameter is deprecated. Use cls instead.",
-            DeprecationWarning,
-        )
-        result = validator.validate(spec, request, base_url=base_url)
-        result.raise_for_errors()
-        return result
-
-    # redirect to unmarshaller for backward compatibility
-    if cls is None or issubclass(
-        cls, (RequestUnmarshaller, WebhookRequestUnmarshaller)
-    ):
-        warnings.warn(
-            "validate_request is deprecated for unmarshalling data "
-            "and it will not return any result in the future. "
-            "Use unmarshal_request function instead.",
-            DeprecationWarning,
-        )
-        return unmarshal_request(
-            request,
-            spec=spec,
-            base_url=base_url,
-            cls=cls,
-            **validator_kwargs,
-        )
     if isinstance(request, WebhookRequest):
         if cls is None or issubclass(cls, WebhookRequestValidator):
             validate_webhook_request(
@@ -363,23 +319,9 @@ def validate_response(
     response: Union[Response, Request, WebhookRequest],
     spec: Union[Spec, Response],
     base_url: Optional[str] = None,
-    validator: Optional[SpecResponseValidatorProxy] = None,
     cls: Optional[AnyResponseValidatorType] = None,
     **validator_kwargs: Any,
 ) -> Optional[ResponseUnmarshalResult]:
-    if (
-        isinstance(request, Spec)
-        and isinstance(response, (Request, WebhookRequest))
-        and isinstance(spec, Response)
-    ):
-        warnings.warn(
-            "spec parameter as a first argument is deprecated. "
-            "Move it to third argument instead.",
-            DeprecationWarning,
-        )
-        args = request, response, spec
-        spec, request, response = args
-
     if not isinstance(request, (Request, WebhookRequest)):
         raise TypeError("'request' argument is not type of (Webhook)Request")
     if not isinstance(response, Response):
@@ -387,33 +329,6 @@ def validate_response(
     if not isinstance(spec, Spec):
         raise TypeError("'spec' argument is not type of Spec")
 
-    if validator is not None and isinstance(request, Request):
-        warnings.warn(
-            "validator parameter is deprecated. Use cls instead.",
-            DeprecationWarning,
-        )
-        result = validator.validate(spec, request, response, base_url=base_url)
-        result.raise_for_errors()
-        return result
-
-    # redirect to unmarshaller for backward compatibility
-    if cls is None or issubclass(
-        cls, (ResponseUnmarshaller, WebhookResponseUnmarshaller)
-    ):
-        warnings.warn(
-            "validate_response is deprecated for unmarshalling data "
-            "and it will not return any result in the future. "
-            "Use unmarshal_response function instead.",
-            DeprecationWarning,
-        )
-        return unmarshal_response(
-            request,
-            response,
-            spec=spec,
-            base_url=base_url,
-            cls=cls,
-            **validator_kwargs,
-        )
     if isinstance(request, WebhookRequest):
         if cls is None or issubclass(cls, WebhookResponseValidator):
             validate_webhook_response(

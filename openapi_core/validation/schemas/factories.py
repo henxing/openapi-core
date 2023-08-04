@@ -7,7 +7,6 @@ from jsonschema._format import FormatChecker
 from jsonschema.protocols import Validator
 
 from openapi_core.spec import Spec
-from openapi_core.validation.schemas.datatypes import CustomFormattersDict
 from openapi_core.validation.schemas.datatypes import FormatValidatorsDict
 from openapi_core.validation.schemas.validators import SchemaValidator
 
@@ -63,7 +62,7 @@ class SchemaValidatorsFactory:
         with schema.open() as schema_dict:
             jsonschema_validator = self.schema_validator_class(
                 schema_dict,
-                resolver=resolver,
+                _resolver=resolver,
                 format_checker=format_checker,
             )
 

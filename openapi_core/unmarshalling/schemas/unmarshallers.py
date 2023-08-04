@@ -1,5 +1,4 @@
 import logging
-import warnings
 from typing import Any
 from typing import Iterable
 from typing import Iterator
@@ -18,7 +17,6 @@ from openapi_core.unmarshalling.schemas.datatypes import (
 )
 from openapi_core.unmarshalling.schemas.exceptions import FormatUnmarshalError
 from openapi_core.unmarshalling.schemas.exceptions import UnmarshallerError
-from openapi_core.validation.schemas.datatypes import CustomFormattersDict
 from openapi_core.validation.schemas.validators import SchemaValidator
 
 log = logging.getLogger(__name__)
@@ -167,18 +165,9 @@ class MultiTypeUnmarshaller(PrimitiveUnmarshaller):
 
 
 class AnyUnmarshaller(MultiTypeUnmarshaller):
-    SCHEMA_TYPES_ORDER = [
-        "object",
-        "array",
-        "boolean",
-        "integer",
-        "number",
-        "string",
-    ]
-
     @property
     def type(self) -> List[str]:
-        return self.SCHEMA_TYPES_ORDER
+        return self.schema_unmarshaller.types_unmarshaller.get_types()
 
 
 class TypesUnmarshaller:
@@ -194,6 +183,9 @@ class TypesUnmarshaller:
         self.unmarshallers = unmarshallers
         self.default = default
         self.multi = multi
+
+    def get_types(self) -> List[str]:
+        return list(self.unmarshallers.keys())
 
     def get_unmarshaller(
         self,
@@ -216,7 +208,6 @@ class FormatsUnmarshaller:
         self,
         format_unmarshallers: Optional[FormatUnmarshallersDict] = None,
         extra_format_unmarshallers: Optional[FormatUnmarshallersDict] = None,
-        custom_formatters: Optional[CustomFormattersDict] = None,
     ):
         if format_unmarshallers is None:
             format_unmarshallers = {}
@@ -224,9 +215,6 @@ class FormatsUnmarshaller:
         if extra_format_unmarshallers is None:
             extra_format_unmarshallers = {}
         self.extra_format_unmarshallers = extra_format_unmarshallers
-        if custom_formatters is None:
-            custom_formatters = {}
-        self.custom_formatters = custom_formatters
 
     def unmarshal(self, schema_format: str, value: Any) -> Any:
         format_unmarshaller = self.get_unmarshaller(schema_format)
@@ -240,9 +228,6 @@ class FormatsUnmarshaller:
     def get_unmarshaller(
         self, schema_format: str
     ) -> Optional[FormatUnmarshaller]:
-        if schema_format in self.custom_formatters:
-            formatter = self.custom_formatters[schema_format]
-            return formatter.format
         if schema_format in self.extra_format_unmarshallers:
             return self.extra_format_unmarshallers[schema_format]
         if schema_format in self.format_unmarshallers:
@@ -252,7 +237,6 @@ class FormatsUnmarshaller:
 
     def __contains__(self, schema_format: str) -> bool:
         format_unmarshallers_dicts: List[Mapping[str, Any]] = [
-            self.custom_formatters,
             self.extra_format_unmarshallers,
             self.format_unmarshallers,
         ]
@@ -275,14 +259,6 @@ class SchemaUnmarshaller:
 
         self.types_unmarshaller = types_unmarshaller
         self.formats_unmarshaller = formats_unmarshaller
-
-    def __call__(self, value: Any) -> Any:
-        warnings.warn(
-            "Calling unmarshaller itself is deprecated. "
-            "Use unmarshal method instead.",
-            DeprecationWarning,
-        )
-        return self.unmarshal(value)
 
     def unmarshal(self, value: Any) -> Any:
         self.schema_validator.validate(value)

@@ -7,23 +7,21 @@ on:
   workflow_dispatch:
   release:
     types:
-      - created
+      - published
 
 jobs:
   publish:
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v2
+      - uses: actions/checkout@v3
 
       - name: Set up Python
-        uses: actions/setup-python@v2
+        uses: actions/setup-python@v4
         with:
           python-version: '3.x'
 
-      - name: Bootstrap poetry
-        run: |
-          curl -sL https://raw.githubusercontent.com/python-poetry/poetry/master/install-poetry.py | python - -y
-          echo "$HOME/.local/bin" >> $GITHUB_PATH
+      - name: Set up poetry
+        uses: Gr1N/setup-poetry@v8
 
       - name: Build
         run: poetry build

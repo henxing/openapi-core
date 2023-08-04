@@ -64,28 +64,6 @@ class BaseTestOASSchemaUnmarshallersFactoryCall:
             False,
         ],
     )
-    def test_call_deprecated(self, unmarshallers_factory, value):
-        schema = {}
-        spec = Spec.from_dict(schema, validator=None)
-        unmarshaller = unmarshallers_factory.create(spec)
-
-        with pytest.warns(DeprecationWarning):
-            result = unmarshaller(value)
-
-        assert result == value
-
-    @pytest.mark.parametrize(
-        "value",
-        [
-            "test",
-            10,
-            10,
-            3.12,
-            ["one", "two"],
-            True,
-            False,
-        ],
-    )
     def test_no_type(self, unmarshallers_factory, value):
         schema = {}
         spec = Spec.from_dict(schema, validator=None)
@@ -265,8 +243,6 @@ class BaseTestOASSchemaUnmarshallersFactoryCall:
     @pytest.mark.parametrize(
         "type,format,value",
         [
-            ("number", "float", 3),
-            ("number", "double", 3),
             ("string", "date", "test"),
             ("string", "date-time", "test"),
             ("string", "uuid", "test"),
@@ -2059,3 +2035,12 @@ class TestOAS31SchemaUnmarshallersFactory(
             unmarshaller.unmarshal(value)
         assert len(exc_info.value.schema_errors) == 1
         assert "is not of type" in exc_info.value.schema_errors[0].message
+
+    def test_any_null(self, unmarshallers_factory):
+        schema = {}
+        spec = Spec.from_dict(schema, validator=None)
+        unmarshaller = unmarshallers_factory.create(spec)
+
+        result = unmarshaller.unmarshal(None)
+
+        assert result is None

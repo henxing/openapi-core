@@ -21,6 +21,7 @@ class FormatterNotFoundError(UnmarshallerError):
         return f"Formatter not found for {self.type_format} format"
 
 
+@dataclass
 class FormatUnmarshalError(UnmarshallerError):
     """Unable to unmarshal value for format"""
 

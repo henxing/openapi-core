@@ -9,10 +9,10 @@ jobs:
   build:
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v2
+      - uses: actions/checkout@v3
 
       - name: Set up Python 3.9
-        uses: actions/setup-python@v2
+        uses: actions/setup-python@v4
         with:
           python-version: 3.9
 
@@ -20,16 +20,14 @@ jobs:
         id: full-python-version
         run: echo ::set-output name=version::$(python -c "import sys; print('-'.join(str(v) for v in sys.version_info))")
 
-      - name: Bootstrap poetry
-        run: |
-          curl -sL https://raw.githubusercontent.com/python-poetry/poetry/master/install-poetry.py | python - -y
-          echo "$HOME/.local/bin" >> $GITHUB_PATH
+      - name: Set up poetry
+        uses: Gr1N/setup-poetry@v8
 
       - name: Configure poetry
         run: poetry config virtualenvs.in-project true
 
       - name: Set up cache
-        uses: actions/cache@v2
+        uses: actions/cache@v3
         id: cache
         with:
           path: .venv
@@ -40,13 +38,13 @@ jobs:
         run: timeout 10s poetry run pip --version || rm -rf .venv
 
       - name: Install dependencies
-        run: poetry install -E docs
+        run: poetry install --with docs
 
       - name: Build documentation
         run: |
           poetry run python -m sphinx -T -b html -d docs/_build/doctrees -D language=en docs docs/_build/html -n -W
 
-      - uses: actions/upload-artifact@v2
+      - uses: actions/upload-artifact@v3
         name: Upload docs as artifact
         with:
           name: docs-html
